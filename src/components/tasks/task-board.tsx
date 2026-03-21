@@ -6,6 +6,7 @@ import { STATUS_VARIANTS } from "@/lib/constants";
 import { capitalize, cn, formatDate } from "@/lib/utils";
 import { useToast } from "@/providers/toast-provider";
 import { Badge } from "@/components/ui/badge";
+import { getDeadlineBadge } from "@/lib/deadline";
 import type { Task, Profile, Client, TaskStatus } from "@/lib/types";
 
 const COLUMNS: TaskStatus[] = ["pending", "in_progress", "completed", "blocked"];
@@ -159,13 +160,23 @@ function TaskCard({ task, assignee, client, onDragStart, onEdit }: TaskCardProps
         )}
 
         {task.due_date && (
-          <div
-            className={cn(
-              "text-xs",
-              isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"
-            )}
-          >
-            Due {formatDate(task.due_date)}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className={cn(
+                "text-xs",
+                isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"
+              )}
+            >
+              Due {formatDate(task.due_date)}
+            </span>
+            {(() => {
+              const deadlineBadge = getDeadlineBadge(task.due_date, task.status);
+              return deadlineBadge ? (
+                <Badge variant={deadlineBadge.variant} className="text-[10px]">
+                  {deadlineBadge.label}
+                </Badge>
+              ) : null;
+            })()}
           </div>
         )}
       </div>

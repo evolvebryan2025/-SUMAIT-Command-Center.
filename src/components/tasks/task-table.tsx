@@ -8,6 +8,7 @@ import { capitalize, cn, formatDate } from "@/lib/utils";
 import { useToast } from "@/providers/toast-provider";
 import { Badge } from "@/components/ui/badge";
 import { SelectField } from "@/components/ui/select-field";
+import { getDeadlineBadge } from "@/lib/deadline";
 import type { Task, Profile, Client } from "@/lib/types";
 
 type SortKey = "title" | "status" | "priority" | "due_date" | "created_at";
@@ -230,9 +231,19 @@ export function TaskTable({
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {task.due_date ? (
-                    <span className={isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"}>
-                      {formatDate(task.due_date)}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"}>
+                        {formatDate(task.due_date)}
+                      </span>
+                      {(() => {
+                        const deadlineBadge = getDeadlineBadge(task.due_date, task.status);
+                        return deadlineBadge ? (
+                          <Badge variant={deadlineBadge.variant} className="text-[10px] w-fit">
+                            {deadlineBadge.label}
+                          </Badge>
+                        ) : null;
+                      })()}
+                    </div>
                   ) : (
                     <span className="text-[var(--color-text-secondary)]">{"\u2014"}</span>
                   )}
