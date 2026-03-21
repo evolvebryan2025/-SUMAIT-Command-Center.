@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { ChatWidget } from "@/components/ai/chat-widget";
+import { OnboardingGate } from "@/components/onboarding/onboarding-gate";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +17,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <NotificationBell />
           </div>
           <div className="max-w-[1440px] mx-auto px-6 lg:px-8 pb-6 lg:pb-8">
-            {children}
+            <OnboardingGate>
+              {children}
+            </OnboardingGate>
           </div>
         </main>
         <ChatWidget />

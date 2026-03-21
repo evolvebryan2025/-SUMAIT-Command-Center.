@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, UserCog, FileText, Settings, LogOut, CheckSquare, Mail, CalendarDays, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Users, UserCog, FileText, Settings, LogOut, CheckSquare, Mail, CalendarDays, ClipboardList, HelpCircle } from "lucide-react";
 import { DevKitSwitcher } from "./dev-kit-switcher";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +18,7 @@ const navItems = [
   { label: "Team", href: "/team", icon: UserCog },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },
+  { label: "Help", href: "/welcome", icon: HelpCircle, memberOnly: true },
 ];
 
 export function Sidebar() {
@@ -31,7 +32,12 @@ export function Sidebar() {
     router.push("/login");
   }
 
-  const filteredItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const isMember = profile?.role === "member";
+  const filteredItems = navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.memberOnly && !isMember) return false;
+    return true;
+  });
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 bg-[var(--color-surface)] border-r border-[var(--color-border)] flex flex-col p-4 z-40 max-lg:hidden">
