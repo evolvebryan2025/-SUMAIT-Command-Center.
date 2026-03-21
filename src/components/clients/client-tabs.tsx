@@ -20,6 +20,7 @@ import { LifecycleTab } from "@/components/clients/lifecycle-tab";
 import { ActivityTab } from "@/components/clients/activity-tab";
 import Link from "next/link";
 import { Users } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
 
 interface ClientTabsProps {
   clientId: string;
@@ -28,9 +29,9 @@ interface ClientTabsProps {
 const TABS = [
   { value: "overview", label: "Overview" },
   { value: "projects", label: "Projects" },
-  { value: "contacts", label: "Contacts" },
+  { value: "contacts", label: "Contacts", adminOnly: true },
   { value: "knowledge", label: "Knowledge Base" },
-  { value: "credentials", label: "Vault" },
+  { value: "credentials", label: "Vault", adminOnly: true },
   { value: "lifecycle", label: "Lifecycle" },
   { value: "activity", label: "Activity" },
 ];
@@ -40,6 +41,9 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const { isAdmin } = useUser();
+
+  const filteredTabs = TABS.filter((tab) => !tab.adminOnly || isAdmin);
 
   const fetchClient = useCallback(async () => {
     setLoading(true);
@@ -103,7 +107,7 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
 
       <Tabs defaultValue="overview">
         <TabsList>
-          {TABS.map((tab) => (
+          {filteredTabs.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}
             </TabsTrigger>
@@ -115,7 +119,7 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
           {editing ? (
             <ClientForm client={client} onSave={handleSave} />
           ) : (
-            <OverviewPanel client={client} onEdit={() => setEditing(true)} />
+            <OverviewPanel client={client} onEdit={() => setEditing(true)} isAdmin={isAdmin} />
           )}
         </TabsContent>
 
@@ -124,10 +128,12 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
           <ProjectsTab clientId={clientId} />
         </TabsContent>
 
-        {/* Contacts tab */}
-        <TabsContent value="contacts">
-          <ContactsTab clientId={clientId} />
-        </TabsContent>
+        {/* Contacts tab (admin only) */}
+        {isAdmin && (
+          <TabsContent value="contacts">
+            <ContactsTab clientId={clientId} />
+          </TabsContent>
+        )}
 
         {/* Knowledge Base tab */}
         <TabsContent value="knowledge">
@@ -137,9 +143,11 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
           />
         </TabsContent>
 
-        <TabsContent value="credentials">
-          <CredentialsTab clientId={clientId} />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="credentials">
+            <CredentialsTab clientId={clientId} />
+          </TabsContent>
+        )}
 
         <TabsContent value="lifecycle">
           <LifecycleTab clientId={clientId} client={client} onClientUpdated={fetchClient} />
@@ -154,7 +162,7 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
   );
 }
 
-function OverviewPanel({ client, onEdit }: { client: Client; onEdit: () => void }) {
+function OverviewPanel({ client, onEdit, isAdmin }: { client: Client; onEdit: () => void; isAdmin: boolean }) {
   const healthColor = getHealthScoreColor(client.health_score);
   const [parentClient, setParentClient] = useState<{ id: string; name: string } | null>(null);
   const [subClients, setSubClients] = useState<{ id: string; name: string; company: string | null; health_score: number }[]>([]);
@@ -179,11 +187,13 @@ function OverviewPanel({ client, onEdit }: { client: Client; onEdit: () => void 
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <Button size="sm" variant="secondary" onClick={onEdit}>
-          Edit Client
-        </Button>
-      </div>
+      {isAdmin && (
+        <div className="flex items-center justify-end">
+          <Button size="sm" variant="secondary" onClick={onEdit}>
+            Edit Client
+          </Button>
+        </div>
+      )}
 
       <Card>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -222,11 +232,13 @@ function OverviewPanel({ client, onEdit }: { client: Client; onEdit: () => void 
             </span>
           </InfoRow>
 
-          <InfoRow label="Email">
-            <span className="text-sm text-[var(--color-text)]">
-              {client.email ?? "Not set"}
-            </span>
-          </InfoRow>
+          {isAdmin && (
+            <InfoRow label="Email">
+              <span className="text-sm text-[var(--color-text)]">
+                {client.email ?? "Not set"}
+              </span>
+            </InfoRow>
+          )}
 
           <InfoRow label="Company">
             <span className="text-sm text-[var(--color-text)]">

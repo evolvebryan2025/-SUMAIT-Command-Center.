@@ -14,6 +14,7 @@ import { SelectField } from "@/components/ui/select-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
 
 export function ClientList() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -21,6 +22,7 @@ export function ClientList() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { isAdmin } = useUser();
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -143,6 +145,7 @@ export function ClientList() {
                 key={client.id}
                 client={client}
                 parentName={parent?.name}
+                showEmail={isAdmin}
               />
             );
           })}
@@ -152,7 +155,7 @@ export function ClientList() {
   );
 }
 
-function ClientCard({ client, parentName }: { client: Client; parentName?: string }) {
+function ClientCard({ client, parentName, showEmail }: { client: Client; parentName?: string; showEmail?: boolean }) {
   const healthColor = getHealthScoreColor(client.health_score);
 
   return (
@@ -206,7 +209,7 @@ function ClientCard({ client, parentName }: { client: Client; parentName?: strin
           </div>
         </div>
 
-        {client.email && (
+        {showEmail && client.email && (
           <p className="text-xs text-[var(--color-text-secondary)] mt-3 truncate">
             {client.email}
           </p>
