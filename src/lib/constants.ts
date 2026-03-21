@@ -51,3 +51,12 @@ export const PROJECT_TYPE_VARIANTS: Record<string, "active" | "warning" | "dange
 };
 
 export const WORKLOAD_THRESHOLDS = { green: 3, yellow: 6 } as const;
+
+export const COMMENT_TYPES = ["comment", "question", "blocker"] as const;
+export const COMMENT_TYPE_LABELS: Record<string, string> = {
+  comment: "Comment",
+  question: "Question",
+  blocker: "Blocker",
+};
+export const REPORT_ITEM_TYPES = ["completed", "pending", "blocker"] as const;
+export const REPORT_STATUSES = ["draft", "approved", "deployed"] as const;

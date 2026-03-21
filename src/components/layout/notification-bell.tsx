@@ -11,6 +11,11 @@ import {
   Settings,
   Info,
   Check,
+  Clock,
+  MessageCircle,
+  HelpCircle,
+  AlertOctagon,
+  ClipboardX,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
@@ -21,8 +26,13 @@ import type { Notification, NotificationType } from "@/lib/types";
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   task_assigned: <CheckCircle size={16} className="text-[#3b82f6]" />,
   task_overdue: <AlertTriangle size={16} className="text-[#ef4444]" />,
+  task_due_soon: <Clock size={16} className="text-[#f59e0b]" />,
   client_health: <Heart size={16} className="text-[#eab308]" />,
   report_ready: <FileText size={16} className="text-[#22c55e]" />,
+  comment_reply: <MessageCircle size={16} className="text-[#3b82f6]" />,
+  question_posted: <HelpCircle size={16} className="text-[#8b5cf6]" />,
+  blocker_raised: <AlertOctagon size={16} className="text-[#ef4444]" />,
+  daily_report_missing: <ClipboardX size={16} className="text-[#f59e0b]" />,
   system: <Settings size={16} className="text-[var(--color-text-muted)]" />,
   info: <Info size={16} className="text-[#3b82f6]" />,
 };

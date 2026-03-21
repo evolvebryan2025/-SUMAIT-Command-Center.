@@ -6,7 +6,7 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type ContactStatus = "active" | "inactive" | "prospect";
 export type AlertType = "decision_review" | "task_overdue" | "client_health" | "system" | "info";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
-export type NotificationType = "task_assigned" | "task_overdue" | "client_health" | "report_ready" | "system" | "info";
+export type NotificationType = "task_assigned" | "task_overdue" | "task_due_soon" | "client_health" | "report_ready" | "comment_reply" | "question_posted" | "blocker_raised" | "daily_report_missing" | "system" | "info";
 export type ReportType = "morning_brief" | "client_report" | "employee_report" | "team_performance" | "delegation_dashboard";
 export type LifecycleStage = "prospect" | "onboarding" | "active" | "at_risk" | "churned" | "paused";
 export type CredentialType = "api_key" | "password" | "oauth_token" | "ssh_key" | "certificate" | "other";
@@ -21,6 +21,7 @@ export interface Profile {
   avatar_url: string | null;
   is_active: boolean;
   active_dev_kit_id: string | null;
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -159,6 +160,8 @@ export interface Notification {
   created_at: string;
 }
 
+export type ReportStatus = "draft" | "approved" | "deployed";
+
 export interface GeneratedReport {
   id: string;
   type: ReportType;
@@ -168,6 +171,7 @@ export interface GeneratedReport {
   dev_kit_id: string | null;
   generated_by: string | null;
   vercel_url: string | null;
+  status: ReportStatus | null;
   created_at: string;
 }
 
@@ -221,5 +225,61 @@ export interface ClientEvent {
   metadata: Record<string, unknown>;
   created_by: string | null;
   profiles?: { name: string } | null;
+  created_at: string;
+}
+
+export type CommentType = "comment" | "question" | "blocker";
+
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  author_id: string;
+  content: string;
+  comment_type: CommentType;
+  is_resolved: boolean;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profiles?: { name: string; avatar_url: string | null } | null;
+}
+
+export interface CommentRead {
+  comment_id: string;
+  user_id: string;
+  read_at: string;
+}
+
+export interface DailyReport {
+  id: string;
+  user_id: string;
+  report_date: string;
+  created_at: string;
+  updated_at: string;
+  items?: DailyReportItem[];
+  profiles?: { name: string; avatar_url: string | null } | null;
+}
+
+export interface DailyReportItem {
+  id: string;
+  report_id: string;
+  task_id: string | null;
+  item_type: "completed" | "pending" | "blocker";
+  description: string;
+  links: string[];
+  sort_order: number;
+  created_at: string;
+  attachments?: DailyReportAttachment[];
+}
+
+export interface DailyReportAttachment {
+  id: string;
+  item_id: string;
+  report_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  uploaded_by: string | null;
   created_at: string;
 }
