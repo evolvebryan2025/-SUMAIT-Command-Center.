@@ -168,6 +168,105 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 4. Due-soon tasks (due tomorrow)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+    const { data: dueSoonTasks } = await supabase
+      .from("tasks")
+      .select("id, title, assigned_to")
+      .eq("due_date", tomorrowStr)
+      .neq("status", "completed")
+      .limit(100);
+
+    for (const task of dueSoonTasks || []) {
+      const { data: existing } = await supabase
+        .from("alerts")
+        .select("id")
+        .eq("entity_type", "task")
+        .eq("entity_id", task.id)
+        .eq("type", "task_overdue")
+        .eq("severity", "medium")
+        .eq("is_resolved", false)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from("alerts").insert({
+          type: "task_overdue",
+          title: `Due tomorrow: ${task.title}`,
+          message: `Task "${task.title}" is due tomorrow`,
+          severity: "medium",
+          entity_type: "task",
+          entity_id: task.id,
+        });
+        created.push(`due_soon:${task.id}`);
+
+        if (task.assigned_to) {
+          notify({
+            supabase, userId: task.assigned_to, title: `Due tomorrow: ${task.title}`,
+            message: `Your task "${task.title}" is due tomorrow.`,
+            type: "task_due_soon" as any, entityType: "tasks", entityId: task.id,
+            channels: ["in_app"],
+          }).catch(console.error);
+        }
+      }
+    }
+
+    // 5. Daily report missing check (after 18:00 PHT = 10:00 UTC, weekdays only)
+    const nowUtc = new Date();
+    const phHour = (nowUtc.getUTCHours() + 8) % 24;
+    const phDay = new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000).getUTCDay();
+    const isWeekday = phDay >= 1 && phDay <= 5;
+
+    if (phHour >= 18 && isWeekday) {
+      const phtDate = new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000).toISOString().split("T")[0];
+      const { data: members } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .eq("role", "member")
+        .eq("is_active", true);
+
+      for (const member of members || []) {
+        const { data: report } = await supabase
+          .from("daily_reports")
+          .select("id")
+          .eq("user_id", member.id)
+          .eq("report_date", phtDate)
+          .maybeSingle();
+
+        if (!report) {
+          const { data: existingNotif } = await supabase
+            .from("notifications")
+            .select("id")
+            .eq("user_id", member.id)
+            .eq("type", "daily_report_missing")
+            .gte("created_at", today + "T00:00:00")
+            .maybeSingle();
+
+          if (!existingNotif) {
+            notify({
+              supabase, userId: member.id,
+              title: "Daily report missing",
+              message: `You haven't submitted your daily report for ${phtDate}.`,
+              type: "daily_report_missing" as any, channels: ["in_app"],
+            }).catch(console.error);
+
+            const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin").eq("is_active", true);
+            for (const admin of admins || []) {
+              notify({
+                supabase, userId: admin.id,
+                title: `Missing report: ${member.name}`,
+                message: `${member.name} hasn't submitted their daily report for ${phtDate}.`,
+                type: "daily_report_missing" as any, channels: ["in_app"],
+              }).catch(console.error);
+            }
+            created.push(`missing_report:${member.id}`);
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       checked: today,
