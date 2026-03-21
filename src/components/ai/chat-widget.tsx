@@ -3,11 +3,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageSquare, Send, X, Trash2 } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
+import { useUser } from "@/hooks/use-user";
 import { ChatMessage } from "./chat-message";
 
 const MAX_INPUT_LENGTH = 2000;
 
 export function ChatWidget() {
+  const { isAdmin, loading } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,8 @@ export function ChatWidget() {
 
   const charCount = input.length;
   const isOverLimit = charCount > MAX_INPUT_LENGTH;
+
+  if (loading || !isAdmin) return null;
 
   return (
     <>
