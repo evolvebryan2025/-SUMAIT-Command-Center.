@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity-logger";
 
 const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
@@ -110,6 +111,9 @@ export async function POST(request: NextRequest) {
 
     // Use the production alias (project-name.vercel.app) instead of unique deployment URL
     const url = `https://${projectName}.vercel.app`;
+
+    logActivity(supabase, "report_deployed", "generated_report", deployData.id, { url }).catch(console.error);
+
     return NextResponse.json({ url, id: deployData.id });
   } catch (err) {
     return NextResponse.json(

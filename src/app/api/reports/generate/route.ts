@@ -455,6 +455,125 @@ ${unassigned.length > 0 ? `
   return htmlShell(title, body, theme);
 }
 
+interface DailyReportRow {
+  id: string;
+  user_id: string;
+  report_date: string;
+  created_at: string;
+  profiles: { name: string } | null;
+}
+
+interface DailyReportItemRow {
+  id: string;
+  report_id: string;
+  item_type: "completed" | "pending" | "blocker";
+  description: string;
+  links: string[];
+  sort_order: number;
+}
+
+interface DailyReportAttachmentRow {
+  id: string;
+  item_id: string;
+  report_id: string;
+  file_name: string;
+}
+
+function generateDelegationDailyHTML(
+  title: string,
+  reports: DailyReportRow[],
+  items: DailyReportItemRow[],
+  attachments: DailyReportAttachmentRow[],
+  theme: ReportTheme = DEFAULT_THEME
+): string {
+  const completedItems = items.filter((i) => i.item_type === "completed");
+  const pendingItems = items.filter((i) => i.item_type === "pending");
+  const blockerItems = items.filter((i) => i.item_type === "blocker");
+
+  const builderMap = new Map<string, { name: string; reportIds: string[] }>();
+  for (const r of reports) {
+    const name = r.profiles?.name || "Unknown";
+    const existing = builderMap.get(r.user_id);
+    if (existing) {
+      existing.reportIds.push(r.id);
+    } else {
+      builderMap.set(r.user_id, { name, reportIds: [r.id] });
+    }
+  }
+
+  const builderSections = Array.from(builderMap.entries())
+    .map(([, builder]) => {
+      const reportIds = new Set(builder.reportIds);
+      const builderItems = items.filter((i) => reportIds.has(i.report_id));
+      const completed = builderItems.filter((i) => i.item_type === "completed");
+      const pending = builderItems.filter((i) => i.item_type === "pending");
+      const blockers = builderItems.filter((i) => i.item_type === "blocker");
+      const builderAttachments = attachments.filter((a) => reportIds.has(a.report_id));
+
+      const renderItems = (list: DailyReportItemRow[]) =>
+        list.length === 0
+          ? '<p class="empty" style="padding:0.25rem 0">None</p>'
+          : `<ul style="list-style:disc;padding-left:1.25rem;margin:0">${list
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .map((i) => {
+                const itemAttachments = builderAttachments.filter((a) => a.item_id === i.id);
+                const attachLabel =
+                  itemAttachments.length > 0
+                    ? ` <span style="color:#9ca3af;font-size:0.8rem">[${itemAttachments.map((a) => a.file_name).join(", ")}]</span>`
+                    : "";
+                const linkLabel =
+                  i.links && i.links.length > 0
+                    ? ` <span style="color:#9ca3af;font-size:0.8rem">(${i.links.length} link${i.links.length > 1 ? "s" : ""})</span>`
+                    : "";
+                return `<li style="margin-bottom:0.35rem">${i.description}${linkLabel}${attachLabel}</li>`;
+              })
+              .join("")}</ul>`;
+
+      return `
+    <div style="margin-bottom:2rem;padding:1.25rem;background:${theme.colorSurface};border:1px solid rgba(255,255,255,0.1);border-radius:0.75rem">
+      <h3 style="color:#e5e7eb;font-size:1rem;font-weight:600;margin-bottom:1rem;font-family:${theme.fontHeading}">${builder.name} <span style="color:#9ca3af;font-weight:400;font-size:0.85rem">(${builderItems.length} items)</span></h3>
+      <div style="margin-bottom:0.75rem">
+        <h4 style="color:#22c55e;font-size:0.85rem;font-weight:600;margin-bottom:0.35rem">Completed (${completed.length})</h4>
+        ${renderItems(completed)}
+      </div>
+      <div style="margin-bottom:0.75rem">
+        <h4 style="color:#eab308;font-size:0.85rem;font-weight:600;margin-bottom:0.35rem">Pending (${pending.length})</h4>
+        ${renderItems(pending)}
+      </div>
+      ${blockers.length > 0 ? `
+      <div>
+        <h4 style="color:#ef4444;font-size:0.85rem;font-weight:600;margin-bottom:0.35rem">Blockers (${blockers.length})</h4>
+        ${renderItems(blockers)}
+      </div>` : ""}
+    </div>`;
+    })
+    .join("");
+
+  const body = `
+<div class="header">
+  <h1>${title}</h1>
+  <div class="meta">Daily delegation report &mdash; builder submissions overview</div>
+</div>
+
+<div class="section">
+  <div class="stat-grid">
+    <div class="stat-card"><div class="label">Reports</div><div class="value">${reports.length}</div></div>
+    <div class="stat-card"><div class="label">Builders</div><div class="value">${builderMap.size}</div></div>
+    <div class="stat-card"><div class="label">Total Items</div><div class="value">${items.length}</div></div>
+    <div class="stat-card"><div class="label">Completed</div><div class="value" style="color:#22c55e">${completedItems.length}</div></div>
+    <div class="stat-card"><div class="label">Pending</div><div class="value" style="color:#eab308">${pendingItems.length}</div></div>
+    <div class="stat-card"><div class="label">Blockers</div><div class="value" style="color:#ef4444">${blockerItems.length}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Builder Breakdown</h2>
+  ${reports.length === 0 ? '<p class="empty">No daily reports found for this period.</p>' : builderSections}
+</div>`;
+
+  return htmlShell(title, body, theme);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -604,21 +723,71 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "delegation_daily": {
+        const scope: string = parameters.scope || "daily";
+        const singleDate = parameters.date || new Date().toISOString().split("T")[0];
+        const dateStart = scope === "weekly" ? parameters.dateStart || singleDate : singleDate;
+        const dateEnd = scope === "weekly" ? parameters.dateEnd || singleDate : singleDate;
+
+        title = scope === "weekly"
+          ? `Delegation Report (${dateStart} to ${dateEnd})`
+          : `Delegation Report - ${singleDate}`;
+
+        let reportsQuery = supabase
+          .from("daily_reports")
+          .select("id, user_id, report_date, created_at, profiles:user_id(name)")
+          .gte("report_date", dateStart)
+          .lte("report_date", dateEnd)
+          .order("report_date", { ascending: true });
+
+        if (parameters.userId) {
+          reportsQuery = reportsQuery.eq("user_id", parameters.userId);
+        }
+
+        const { data: dailyReports } = await reportsQuery;
+        const reportRows = (dailyReports as unknown as DailyReportRow[]) || [];
+        const reportIds = reportRows.map((r) => r.id);
+
+        let itemRows: DailyReportItemRow[] = [];
+        let attachmentRows: DailyReportAttachmentRow[] = [];
+
+        if (reportIds.length > 0) {
+          const { data: fetchedItems } = await supabase
+            .from("daily_report_items")
+            .select("id, report_id, item_type, description, links, sort_order")
+            .in("report_id", reportIds)
+            .order("sort_order", { ascending: true });
+          itemRows = (fetchedItems as DailyReportItemRow[]) || [];
+
+          const { data: fetchedAttachments } = await supabase
+            .from("daily_report_attachments")
+            .select("id, item_id, report_id, file_name")
+            .in("report_id", reportIds);
+          attachmentRows = (fetchedAttachments as DailyReportAttachmentRow[]) || [];
+        }
+
+        html = generateDelegationDailyHTML(title, reportRows, itemRows, attachmentRows, theme);
+        break;
+      }
+
       default:
         return NextResponse.json({ error: "Invalid report type" }, { status: 400 });
     }
 
     const { data: { user } } = await supabase.auth.getUser();
 
+    const storageType = type === "delegation_daily" ? "delegation_dashboard" : type;
+
     const { data: report, error } = await supabase
       .from("generated_reports")
       .insert({
-        type,
+        type: storageType,
         title,
         parameters,
         html_content: html,
         dev_kit_id: devKitId,
         generated_by: user?.id || null,
+        status: type === "delegation_daily" ? "draft" : undefined,
       })
       .select()
       .single();
@@ -628,10 +797,19 @@ export async function POST(request: NextRequest) {
     }
 
     await logActivity(supabase, "created", "report", report.id, {
-      type,
+      type: storageType,
       title,
       dev_kit_id: devKitId,
     });
+
+    if (type === "delegation_daily") {
+      await logActivity(supabase, "report_generated", "report", report.id, {
+        scope: parameters.scope || "daily",
+        date_range: { start: parameters.dateStart || parameters.date, end: parameters.dateEnd || parameters.date },
+      });
+    }
+
+    logActivity(supabase, "report_generated", "generated_report", report.id, { type: report.type }).catch(console.error);
 
     return NextResponse.json(report);
   } catch (err) {

@@ -108,6 +108,10 @@ export async function POST(request: NextRequest) {
       assigned_to: data.assigned_to,
     }).catch(console.error);
 
+    if (profile?.role === "member") {
+      logActivity(supabase, "task_created_by_member", "task", data.id, { title: data.title }).catch(console.error);
+    }
+
     return NextResponse.json({ task: data }, { status: 201 });
   } catch (err) {
     const message =

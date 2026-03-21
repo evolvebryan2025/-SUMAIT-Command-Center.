@@ -95,6 +95,10 @@ export async function POST(
 
     logActivity(supabase, "comment_created", "task_comment", comment.id, { task_id: taskId, comment_type: safeType }).catch(console.error);
 
+    if (safeType === "blocker") {
+      logActivity(supabase, "blocker_raised", "task", taskId, { comment_id: comment.id }).catch(console.error);
+    }
+
     return NextResponse.json({ comment }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Failed" }, { status: 500 });
