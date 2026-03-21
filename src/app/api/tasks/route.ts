@@ -74,6 +74,19 @@ export async function POST(request: NextRequest) {
       created_by: user.id,
     };
 
+    // Self-assignment guard: members can only assign tasks to themselves
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.role === "member") {
+      if (payload.assigned_to && payload.assigned_to !== user.id) {
+        payload.assigned_to = user.id;
+      }
+    }
+
     const { data, error } = await supabase
       .from("tasks")
       .insert(payload)
