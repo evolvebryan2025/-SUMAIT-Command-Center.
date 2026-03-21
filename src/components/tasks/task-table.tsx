@@ -148,136 +148,238 @@ export function TaskTable({
   );
 
   return (
-    <div className="overflow-x-auto rounded-[var(--radius)] border border-[var(--color-border)] bg-[rgba(255,255,255,0.05)] backdrop-blur-md">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-[var(--color-border)]">
-            <th className="px-4 py-3 w-10">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleAll}
-                className="accent-[var(--color-primary)] cursor-pointer"
-              />
-            </th>
-            <SortHeader label="Task" colKey="title" />
-            <SortHeader label="Status" colKey="status" />
-            <SortHeader label="Priority" colKey="priority" />
-            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-              Assigned To
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-              Client
-            </th>
-            <SortHeader label="Due Date" colKey="due_date" />
-            {isAdmin && (
-              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
-                Actions
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTasks.map((task) => {
-            const assignee = task.assigned_to ? profiles[task.assigned_to] : null;
-            const client = task.client_id ? clients[task.client_id] : null;
-            const isOverdue =
-              task.due_date && task.status !== "completed" && new Date(task.due_date) < new Date();
+    <>
+      {/* Mobile card view (<560px) */}
+      <div className="block sm:hidden space-y-3">
+        {sortedTasks.map((task) => {
+          const assignee = task.assigned_to ? profiles[task.assigned_to] : null;
+          const client = task.client_id ? clients[task.client_id] : null;
+          const deadlineBadge = task.due_date ? getDeadlineBadge(task.due_date, task.status) : null;
+          const isOverdue =
+            task.due_date && task.status !== "completed" && new Date(task.due_date) < new Date();
 
-            return (
-              <tr
-                key={task.id}
-                className={cn(
-                  "border-b border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.03)] transition-colors",
-                  selectedIds.has(task.id) && "bg-[rgba(239,68,68,0.05)]"
-                )}
-              >
-                <td className="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(task.id)}
-                    onChange={() => toggleOne(task.id)}
-                    className="accent-[var(--color-primary)] cursor-pointer"
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="font-medium text-[var(--color-text)] text-sm">{task.title}</div>
+          return (
+            <div
+              key={task.id}
+              className={cn(
+                "rounded-[var(--radius)] border border-[var(--color-border)] bg-[rgba(255,255,255,0.05)] p-4 space-y-3",
+                selectedIds.has(task.id) && "border-[var(--color-primary)] bg-[rgba(239,68,68,0.05)]"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(task.id)}
+                  onChange={() => toggleOne(task.id)}
+                  className="accent-[var(--color-primary)] cursor-pointer mt-1 w-5 h-5"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[var(--color-text)] text-sm">{task.title}</p>
                   {task.description && (
-                    <div className="text-xs text-[var(--color-text-secondary)] truncate max-w-xs mt-0.5">
+                    <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 mt-0.5">
                       {task.description}
-                    </div>
+                    </p>
                   )}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="w-36">
-                    <SelectField
-                      options={statusOptions}
-                      value={task.status}
-                      onChange={(e) => handleInlineStatusChange(task, e.target.value)}
-                      className="!py-1.5 !px-2 !text-xs"
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={STATUS_VARIANTS[task.priority] ?? "neutral"}>
-                    {capitalize(task.priority)}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={STATUS_VARIANTS[task.priority] ?? "neutral"}>
+                  {capitalize(task.priority)}
+                </Badge>
+                {deadlineBadge && (
+                  <Badge variant={deadlineBadge.variant} className="text-[10px]">
+                    {deadlineBadge.label}
                   </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
-                  {assignee?.name ?? "\u2014"}
-                </td>
-                <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
-                  {client?.name ?? "\u2014"}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  {task.due_date ? (
-                    <div className="flex flex-col gap-1">
-                      <span className={isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"}>
-                        {formatDate(task.due_date)}
-                      </span>
-                      {(() => {
-                        const deadlineBadge = getDeadlineBadge(task.due_date, task.status);
-                        return deadlineBadge ? (
-                          <Badge variant={deadlineBadge.variant} className="text-[10px] w-fit">
-                            {deadlineBadge.label}
-                          </Badge>
-                        ) : null;
-                      })()}
-                    </div>
-                  ) : (
-                    <span className="text-[var(--color-text-secondary)]">{"\u2014"}</span>
+                )}
+                {task.due_date && (
+                  <span className={cn("text-xs", isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]")}>
+                    {formatDate(task.due_date)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {assignee && (
+                    <span className="text-xs text-[var(--color-text-secondary)] truncate">
+                      {assignee.name}
+                    </span>
                   )}
-                </td>
-                {isAdmin && (
+                  {client && (
+                    <span className="text-xs text-[var(--color-text-secondary)] truncate">
+                      · {client.name}
+                    </span>
+                  )}
+                </div>
+                <div className="w-32 shrink-0">
+                  <SelectField
+                    options={statusOptions}
+                    value={task.status}
+                    onChange={(e) => handleInlineStatusChange(task, e.target.value)}
+                    className="!py-2 !px-2 !text-xs"
+                  />
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="flex items-center gap-3 pt-1 border-t border-[var(--color-border)]">
+                  <button
+                    onClick={() => onEdit(task)}
+                    className="text-xs text-[var(--color-primary)] hover:underline cursor-pointer py-1"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => onDelete(task)}
+                    className="text-xs text-red-400 hover:underline cursor-pointer py-1"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {sortedTasks.length === 0 && (
+          <p className="text-center text-sm text-[var(--color-text-secondary)] py-12">
+            No tasks match your filters.
+          </p>
+        )}
+      </div>
+
+      {/* Desktop table view (>=560px) */}
+      <div className="hidden sm:block overflow-x-auto rounded-[var(--radius)] border border-[var(--color-border)] bg-[rgba(255,255,255,0.05)] backdrop-blur-md">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[var(--color-border)]">
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="accent-[var(--color-primary)] cursor-pointer"
+                />
+              </th>
+              <SortHeader label="Task" colKey="title" />
+              <SortHeader label="Status" colKey="status" />
+              <SortHeader label="Priority" colKey="priority" />
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                Assigned To
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                Client
+              </th>
+              <SortHeader label="Due Date" colKey="due_date" />
+              {isAdmin && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedTasks.map((task) => {
+              const assignee = task.assigned_to ? profiles[task.assigned_to] : null;
+              const client = task.client_id ? clients[task.client_id] : null;
+              const isOverdue =
+                task.due_date && task.status !== "completed" && new Date(task.due_date) < new Date();
+
+              return (
+                <tr
+                  key={task.id}
+                  className={cn(
+                    "border-b border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.03)] transition-colors",
+                    selectedIds.has(task.id) && "bg-[rgba(239,68,68,0.05)]"
+                  )}
+                >
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onEdit(task)}
-                        className="text-xs text-[var(--color-primary)] hover:underline cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(task)}
-                        className="text-xs text-red-400 hover:underline cursor-pointer"
-                      >
-                        Delete
-                      </button>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(task.id)}
+                      onChange={() => toggleOne(task.id)}
+                      className="accent-[var(--color-primary)] cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-[var(--color-text)] text-sm">{task.title}</div>
+                    {task.description && (
+                      <div className="text-xs text-[var(--color-text-secondary)] truncate max-w-xs mt-0.5">
+                        {task.description}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="w-36">
+                      <SelectField
+                        options={statusOptions}
+                        value={task.status}
+                        onChange={(e) => handleInlineStatusChange(task, e.target.value)}
+                        className="!py-1.5 !px-2 !text-xs"
+                      />
                     </div>
                   </td>
-                )}
+                  <td className="px-4 py-3">
+                    <Badge variant={STATUS_VARIANTS[task.priority] ?? "neutral"}>
+                      {capitalize(task.priority)}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                    {assignee?.name ?? "\u2014"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                    {client?.name ?? "\u2014"}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {task.due_date ? (
+                      <div className="flex flex-col gap-1">
+                        <span className={isOverdue ? "text-red-400 font-medium" : "text-[var(--color-text-secondary)]"}>
+                          {formatDate(task.due_date)}
+                        </span>
+                        {(() => {
+                          const deadlineBadge = getDeadlineBadge(task.due_date, task.status);
+                          return deadlineBadge ? (
+                            <Badge variant={deadlineBadge.variant} className="text-[10px] w-fit">
+                              {deadlineBadge.label}
+                            </Badge>
+                          ) : null;
+                        })()}
+                      </div>
+                    ) : (
+                      <span className="text-[var(--color-text-secondary)]">{"\u2014"}</span>
+                    )}
+                  </td>
+                  {isAdmin && (
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onEdit(task)}
+                          className="text-xs text-[var(--color-primary)] hover:underline cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDelete(task)}
+                          className="text-xs text-red-400 hover:underline cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+            {sortedTasks.length === 0 && (
+              <tr>
+                <td colSpan={isAdmin ? 8 : 7} className="px-4 py-12 text-center text-sm text-[var(--color-text-secondary)]">
+                  No tasks match your filters.
+                </td>
               </tr>
-            );
-          })}
-          {sortedTasks.length === 0 && (
-            <tr>
-              <td colSpan={isAdmin ? 8 : 7} className="px-4 py-12 text-center text-sm text-[var(--color-text-secondary)]">
-                No tasks match your filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

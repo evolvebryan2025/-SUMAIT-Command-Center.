@@ -253,9 +253,9 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           className="!min-h-[70px]"
         />
 
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between gap-3 flex-wrap max-sm:flex-col max-sm:items-stretch">
           {/* Comment type selector */}
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 max-sm:w-full">
             {(["comment", "question", "blocker"] as const).map((type) => (
               <Button
                 key={type}
@@ -263,13 +263,14 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                 size="sm"
                 variant={commentType === type ? "primary" : "secondary"}
                 onClick={() => setCommentType(type)}
+                className="max-sm:flex-1 max-sm:py-2.5"
               >
                 {COMMENT_TYPE_LABELS[type]}
               </Button>
             ))}
           </div>
 
-          <Button type="submit" size="sm" disabled={submitting || !content.trim()}>
+          <Button type="submit" size="sm" disabled={submitting || !content.trim()} className="max-sm:w-full max-sm:py-2.5">
             <Send size={14} />
             {submitting ? "Sending..." : "Send"}
           </Button>

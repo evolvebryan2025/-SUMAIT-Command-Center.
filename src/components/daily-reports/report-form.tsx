@@ -416,11 +416,11 @@ export function ReportForm() {
       })}
 
       {/* Submit */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--color-text-secondary)]">
+      <div className="flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-stretch">
+        <p className="text-xs text-[var(--color-text-secondary)] max-sm:text-center">
           {totalItems} item{totalItems !== 1 ? "s" : ""} in report
         </p>
-        <Button onClick={handleSubmit} disabled={submitting}>
+        <Button onClick={handleSubmit} disabled={submitting} className="max-sm:w-full max-sm:py-3">
           {submitting ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
