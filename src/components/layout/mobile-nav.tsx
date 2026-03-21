@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutDashboard, Users, UserCog, FileText, Settings, CheckSquare, Mail, CalendarDays } from "lucide-react";
+import { Menu, X, LayoutDashboard, Users, UserCog, FileText, Settings, CheckSquare, Mail, CalendarDays, ClipboardList } from "lucide-react";
 import { DevKitSwitcher } from "./dev-kit-switcher";
 import { useUser } from "@/hooks/use-user";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Clients", href: "/clients", icon: Users },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
+  { label: "Daily Report", href: "/daily-report", icon: ClipboardList },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
   { label: "Campaigns", href: "/campaigns", icon: Mail },
   { label: "Team", href: "/team", icon: UserCog },

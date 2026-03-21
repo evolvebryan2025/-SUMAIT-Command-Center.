@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, UserCog, FileText, Settings, LogOut, CheckSquare, Mail, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Users, UserCog, FileText, Settings, LogOut, CheckSquare, Mail, CalendarDays, ClipboardList } from "lucide-react";
 import { DevKitSwitcher } from "./dev-kit-switcher";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,7 @@ const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Clients", href: "/clients", icon: Users },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
+  { label: "Daily Report", href: "/daily-report", icon: ClipboardList },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
   { label: "Campaigns", href: "/campaigns", icon: Mail },
   { label: "Team", href: "/team", icon: UserCog },
