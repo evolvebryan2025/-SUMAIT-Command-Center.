@@ -267,6 +267,54 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 6. Weekly summary auto-generation (Monday only)
+    const phtNow = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
+    const phtDayOfWeek = phtNow.getUTCDay();
+    if (phtDayOfWeek === 1) { // Monday in PHT
+      const lastMonday = new Date(phtNow);
+      lastMonday.setDate(lastMonday.getDate() - 7);
+      const weekStart = lastMonday.toISOString().split("T")[0];
+      const lastSunday = new Date(lastMonday.getTime() + 6 * 86400000);
+      const weekEnd = lastSunday.toISOString().split("T")[0];
+
+      const { data: existingReport } = await supabase
+        .from("generated_reports")
+        .select("id")
+        .eq("type", "delegation_dashboard")
+        .gte("created_at", weekStart + "T00:00:00")
+        .maybeSingle();
+
+      if (!existingReport) {
+        // Create a placeholder weekly summary report
+        const { data: weekReports } = await supabase
+          .from("daily_reports")
+          .select("user_id, report_date, items:daily_report_items(item_type, description)")
+          .gte("report_date", weekStart)
+          .lte("report_date", weekEnd);
+
+        if (weekReports && weekReports.length > 0) {
+          await supabase.from("generated_reports").insert({
+            type: "delegation_dashboard",
+            title: `Weekly Summary: ${weekStart} to ${weekEnd}`,
+            parameters: { scope: "weekly", week_start: weekStart, week_end: weekEnd },
+            status: "draft",
+          });
+
+          // Notify admin
+          const { data: admins } = await supabase.from("profiles").select("id").eq("role", "admin").eq("is_active", true);
+          for (const admin of admins || []) {
+            notify({
+              supabase, userId: admin.id,
+              title: "Weekly summary ready",
+              message: `Weekly delegation summary for ${weekStart} to ${weekEnd} has been generated.`,
+              type: "report_ready" as any, channels: ["in_app"],
+            }).catch(console.error);
+          }
+          created.push(`weekly_summary:${weekStart}`);
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       checked: today,
