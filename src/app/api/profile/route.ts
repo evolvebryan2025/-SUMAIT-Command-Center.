@@ -10,11 +10,16 @@ export async function PATCH(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { name, avatarUrl } = body as { name?: string; avatarUrl?: string };
+    const { name, avatarUrl, onboarded_at } = body as {
+      name?: string;
+      avatarUrl?: string;
+      onboarded_at?: string;
+    };
 
     const payload: Record<string, unknown> = {};
     if (name !== undefined) payload.name = name.trim();
     if (avatarUrl !== undefined) payload.avatar_url = avatarUrl;
+    if (onboarded_at !== undefined) payload.onboarded_at = onboarded_at;
 
     if (Object.keys(payload).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
