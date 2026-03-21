@@ -1,5 +1,8 @@
 "use client";
 
+import { useUser } from "@/hooks/use-user";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BuilderDashboard } from "@/components/dashboard/builder-dashboard";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { AlertsPanel } from "@/components/dashboard/alerts-panel";
 import { ClientCards } from "@/components/dashboard/client-cards";
@@ -9,7 +12,7 @@ import { TaskTrendChart } from "@/components/dashboard/task-trend-chart";
 import { ClientHealthChart } from "@/components/dashboard/client-health-chart";
 import { TeamPerformanceChart } from "@/components/dashboard/team-performance-chart";
 
-export default function DashboardPage() {
+function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
@@ -45,4 +48,23 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function DashboardPage() {
+  const { isAdmin, loading } = useUser();
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return isAdmin ? <AdminDashboard /> : <BuilderDashboard />;
 }
