@@ -253,9 +253,7 @@ export default function TasksPage() {
             </button>
           </div>
 
-          {isAdmin && (
-            <Button onClick={handleNewTask}>New Task</Button>
-          )}
+          <Button onClick={handleNewTask}>New Task</Button>
         </div>
       </div>
 
@@ -318,7 +316,7 @@ export default function TasksPage() {
               : "Get started by creating your first task."
           }
           action={
-            filters.status === "all" && filters.priority === "all" && filters.assignee === "all" && filters.client === "all" && isAdmin ? (
+            filters.status === "all" && filters.priority === "all" && filters.assignee === "all" && filters.client === "all" ? (
               <Button onClick={handleNewTask}>New Task</Button>
             ) : undefined
           }

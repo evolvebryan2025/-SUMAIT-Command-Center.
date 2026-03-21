@@ -6,12 +6,14 @@ import { X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { TASK_STATUSES, TASK_PRIORITIES } from "@/lib/constants";
 import { capitalize } from "@/lib/utils";
+import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/providers/toast-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectField } from "@/components/ui/select-field";
 import type { Task, Profile, Client, Project } from "@/lib/types";
+import { TaskComments } from "./task-comments";
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -32,6 +34,7 @@ interface FormData {
 }
 
 export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDialogProps) {
+  const { profile, isAdmin } = useUser();
   const { toast } = useToast();
   const isEditing = Boolean(task);
 
@@ -55,19 +58,20 @@ export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDi
   // Reset form when dialog opens or task changes
   useEffect(() => {
     if (open) {
+      const defaultAssignee = !isAdmin && profile?.id ? profile.id : "";
       setForm({
         title: task?.title ?? "",
         description: task?.description ?? "",
         status: task?.status ?? "pending",
         priority: task?.priority ?? "medium",
-        assigned_to: task?.assigned_to ?? "",
+        assigned_to: task?.assigned_to ?? defaultAssignee,
         client_id: task?.client_id ?? "",
         project_id: task?.project_id ?? "",
         due_date: task?.due_date ? task.due_date.split("T")[0] : "",
       });
       setErrors({});
     }
-  }, [open, task]);
+  }, [open, task, isAdmin, profile]);
 
   // Fetch profiles and clients
   useEffect(() => {
@@ -177,12 +181,14 @@ export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDi
 
       setSaving(true);
 
+      const assignedTo = !isAdmin && profile?.id ? profile.id : form.assigned_to || null;
+
       const payload = {
         title: form.title.trim(),
         description: form.description.trim() || null,
         status: form.status,
         priority: form.priority,
-        assigned_to: form.assigned_to || null,
+        assigned_to: assignedTo,
         client_id: form.client_id || null,
         project_id: form.project_id || null,
         due_date: form.due_date || null,
@@ -220,7 +226,7 @@ export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDi
       onOpenChange(false);
       onSaved();
     },
-    [form, validate, isEditing, task, toast, onOpenChange, onSaved]
+    [form, validate, isEditing, task, toast, onOpenChange, onSaved, isAdmin, profile]
   );
 
   return (
@@ -268,12 +274,14 @@ export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDi
               />
             </div>
 
-            <SelectField
-              label="Assigned To"
-              options={assigneeOptions}
-              value={form.assigned_to}
-              onChange={(e) => updateField("assigned_to", e.target.value)}
-            />
+            {isAdmin && (
+              <SelectField
+                label="Assigned To"
+                options={assigneeOptions}
+                value={form.assigned_to}
+                onChange={(e) => updateField("assigned_to", e.target.value)}
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <SelectField
@@ -306,6 +314,15 @@ export function TaskFormDialog({ open, onOpenChange, task, onSaved }: TaskFormDi
               </Button>
             </div>
           </form>
+
+          {/* Comments section */}
+          {isEditing && task?.id ? (
+            <TaskComments taskId={task.id} />
+          ) : (
+            <p className="text-sm text-[var(--color-text-secondary)] pt-4 border-t border-[var(--color-border)] mt-4">
+              Save task first to add comments
+            </p>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
