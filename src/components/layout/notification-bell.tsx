@@ -33,6 +33,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   question_posted: <HelpCircle size={16} className="text-[#8b5cf6]" />,
   blocker_raised: <AlertOctagon size={16} className="text-[#ef4444]" />,
   daily_report_missing: <ClipboardX size={16} className="text-[#f59e0b]" />,
+  client_comment: <MessageCircle size={16} className="text-[#ec4899]" />,
   system: <Settings size={16} className="text-[var(--color-text-muted)]" />,
   info: <Info size={16} className="text-[#3b82f6]" />,
 };
