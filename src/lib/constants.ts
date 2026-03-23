@@ -60,3 +60,28 @@ export const COMMENT_TYPE_LABELS: Record<string, string> = {
 };
 export const REPORT_ITEM_TYPES = ["completed", "pending", "blocker"] as const;
 export const REPORT_STATUSES = ["draft", "approved", "deployed"] as const;
+
+export const CLIENT_COMMENT_AUTHOR_TYPES = ["client", "admin"] as const;
+
+export const PORTAL_DEFAULT_BRANDING = {
+  brand_name: "SUMAIT AI",
+  primary_bg: "#09090B",
+  accent_color: "#3b82f6",
+  text_color: "#ffffff",
+  font_heading: "Inter",
+  font_body: "Inter",
+} as const;
+
+export const PORTAL_TASK_STATUS_LABELS: Record<string, string> = {
+  completed: "Completed",
+  in_progress: "In Progress",
+  pending: "Pending",
+  blocked: "Blocked",
+};
+
+export const PORTAL_TASK_STATUS_COLORS: Record<string, string> = {
+  completed: "#22c55e",
+  in_progress: "#3b82f6",
+  pending: "#6b7280",
+  blocked: "#ef4444",
+};

@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "member";
+export type UserRole = "admin" | "lead" | "member" | "client";
 export type ClientStatus = "active" | "paused" | "inactive" | "archived";
 export type ProjectStatus = "planned" | "in_progress" | "review" | "completed" | "on_hold";
 export type TaskStatus = "pending" | "in_progress" | "completed" | "blocked";
@@ -6,7 +6,7 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type ContactStatus = "active" | "inactive" | "prospect";
 export type AlertType = "decision_review" | "task_overdue" | "client_health" | "system" | "info";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
-export type NotificationType = "task_assigned" | "task_overdue" | "task_due_soon" | "client_health" | "report_ready" | "comment_reply" | "question_posted" | "blocker_raised" | "daily_report_missing" | "system" | "info";
+export type NotificationType = "task_assigned" | "task_overdue" | "task_due_soon" | "client_health" | "report_ready" | "comment_reply" | "question_posted" | "blocker_raised" | "daily_report_missing" | "client_comment" | "system" | "info";
 export type ReportType = "morning_brief" | "client_report" | "employee_report" | "team_performance" | "delegation_dashboard" | "delegation_daily";
 export type LifecycleStage = "prospect" | "onboarding" | "active" | "at_risk" | "churned" | "paused";
 export type CredentialType = "api_key" | "password" | "oauth_token" | "ssh_key" | "certificate" | "other";
@@ -272,6 +272,25 @@ export interface DailyReportItem {
   attachments?: DailyReportAttachment[];
 }
 
+export type ResourceType = "deployment" | "deliverable" | "presentation" | "tool" | "report" | "meeting_note" | "link" | "document";
+export type ResourceStatus = "live" | "archived" | "migrated";
+
+export interface ClientResource {
+  id: string;
+  client_id: string | null;
+  title: string;
+  description: string | null;
+  url: string | null;
+  resource_type: ResourceType;
+  status: ResourceStatus;
+  deploy_date: string | null;
+  source_file: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  clients?: { name: string } | null;
+}
+
 export interface DailyReportAttachment {
   id: string;
   item_id: string;
@@ -282,4 +301,81 @@ export interface DailyReportAttachment {
   storage_path: string;
   uploaded_by: string | null;
   created_at: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  file_url?: string;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
+export type NotificationRuleType = "task_overdue_days" | "no_daily_report" | "client_health_below" | "task_blocked_days" | "no_activity_days" | "custom";
+
+export interface NotificationRule {
+  id: string;
+  name: string;
+  description: string | null;
+  rule_type: NotificationRuleType;
+  threshold: number;
+  is_active: boolean;
+  notify_admin: boolean;
+  notify_assignee: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatAttachment {
+  id: string;
+  user_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  file_url: string | null;
+  created_at: string;
+}
+
+export interface ClientPortalAccess {
+  id: string;
+  user_id: string;
+  client_id: string;
+  invited_by: string;
+  invited_at: string;
+  last_accessed: string | null;
+  is_active: boolean;
+}
+
+export type ClientCommentAuthorType = "client" | "admin";
+
+export interface ClientComment {
+  id: string;
+  task_id: string;
+  author_id: string;
+  author_type: ClientCommentAuthorType;
+  content: string;
+  attachments: unknown[];
+  created_at: string;
+  author_name?: string;
+}
+
+export interface ClientBranding {
+  id: string;
+  client_id: string;
+  brand_name: string;
+  logo_url: string | null;
+  primary_bg: string;
+  accent_color: string;
+  text_color: string;
+  font_heading: string;
+  font_body: string;
+  extra_tokens: Record<string, string>;
+  created_at: string;
+  updated_at: string;
 }
