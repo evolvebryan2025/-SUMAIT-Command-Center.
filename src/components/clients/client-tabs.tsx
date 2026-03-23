@@ -18,6 +18,8 @@ import { KnowledgeDocsTab } from "@/components/clients/knowledge-docs-tab";
 import { CredentialsTab } from "@/components/clients/credentials-tab";
 import { LifecycleTab } from "@/components/clients/lifecycle-tab";
 import { ActivityTab } from "@/components/clients/activity-tab";
+import { ResourcesTab } from "@/components/clients/resources-tab";
+import { PortalAccessTab } from "@/components/clients/portal-access-tab";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
@@ -29,11 +31,13 @@ interface ClientTabsProps {
 const TABS = [
   { value: "overview", label: "Overview" },
   { value: "projects", label: "Projects" },
+  { value: "resources", label: "Resources" },
   { value: "contacts", label: "Contacts", adminOnly: true },
   { value: "knowledge", label: "Knowledge Base" },
   { value: "credentials", label: "Vault", adminOnly: true },
   { value: "lifecycle", label: "Lifecycle" },
   { value: "activity", label: "Activity" },
+  { value: "portal", label: "Portal", adminOnly: true },
 ];
 
 export function ClientTabs({ clientId }: ClientTabsProps) {
@@ -128,6 +132,11 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
           <ProjectsTab clientId={clientId} />
         </TabsContent>
 
+        {/* Resources tab */}
+        <TabsContent value="resources">
+          <ResourcesTab clientId={clientId} />
+        </TabsContent>
+
         {/* Contacts tab (admin only) */}
         {isAdmin && (
           <TabsContent value="contacts">
@@ -157,6 +166,13 @@ export function ClientTabs({ clientId }: ClientTabsProps) {
         <TabsContent value="activity">
           <ActivityTab clientId={clientId} />
         </TabsContent>
+
+        {/* Portal access tab (admin only) */}
+        {isAdmin && client && (
+          <TabsContent value="portal">
+            <PortalAccessTab client={client} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
