@@ -20,12 +20,13 @@ import {
   Loader2,
 } from "lucide-react";
 
-type SectionType = "completed" | "pending" | "blocker";
+type SectionType = "completed" | "pending" | "blocker" | "meeting_note";
 
 interface SectionState {
   completed: boolean;
   pending: boolean;
   blocker: boolean;
+  meeting_note: boolean;
 }
 
 function formatDate(date: Date): string {
@@ -45,6 +46,7 @@ const SECTION_META: Record<SectionType, { label: string; icon: React.ReactNode; 
   completed: { label: "Completed", icon: <CheckCircle size={16} />, badgeVariant: "active" },
   pending: { label: "Pending", icon: <Clock size={16} />, badgeVariant: "warning" },
   blocker: { label: "Blockers", icon: <AlertTriangle size={16} />, badgeVariant: "danger" },
+  meeting_note: { label: "Meeting Notes", icon: <Clock size={16} />, badgeVariant: "active" },
 };
 
 export function ReportForm() {
@@ -59,11 +61,13 @@ export function ReportForm() {
     completed: [],
     pending: [],
     blocker: [],
+    meeting_note: [],
   });
   const [collapsed, setCollapsed] = useState<SectionState>({
     completed: false,
     pending: false,
     blocker: false,
+    meeting_note: false,
   });
   const [existingReportId, setExistingReportId] = useState<string | null>(null);
 
@@ -119,6 +123,7 @@ export function ReportForm() {
               completed: [],
               pending: [],
               blocker: [],
+              meeting_note: [],
             };
             for (const item of report.items ?? []) {
               grouped[item.item_type].push({

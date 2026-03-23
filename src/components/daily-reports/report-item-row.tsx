@@ -8,7 +8,7 @@ import { X, Plus, Link as LinkIcon } from "lucide-react";
 export interface ReportItemData {
   description: string;
   links: string[];
-  item_type: "completed" | "pending" | "blocker";
+  item_type: "completed" | "pending" | "blocker" | "meeting_note";
   task_id?: string | null;
 }
 

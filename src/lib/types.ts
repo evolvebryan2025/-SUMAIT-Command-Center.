@@ -264,7 +264,8 @@ export interface DailyReportItem {
   id: string;
   report_id: string;
   task_id: string | null;
-  item_type: "completed" | "pending" | "blocker";
+  item_type: "completed" | "pending" | "blocker" | "meeting_note";
+  client_id?: string;
   description: string;
   links: string[];
   sort_order: number;
@@ -378,4 +379,75 @@ export interface ClientBranding {
   extra_tokens: Record<string, string>;
   created_at: string;
   updated_at: string;
+}
+
+// Morning Brief types
+export type AlertCategory = 'OVERDUE' | 'DEADLINE' | 'BLOCKER' | 'MEETING' | 'STALE';
+
+export interface BriefAlert {
+  id: string;
+  category: AlertCategory;
+  title: string;
+  message: string;
+  client_name?: string;
+  client_id?: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  source_id?: string;
+  source_type?: 'task' | 'alert' | 'report';
+}
+
+export interface BriefAction {
+  id: string;
+  brief_date: string;
+  action_text: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'acknowledged' | 'task_created';
+  task_id?: string;
+  client_id?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DelegationSuggestion {
+  employee_id: string;
+  employee_name: string;
+  client_id: string;
+  client_name: string;
+  task_title: string;
+  priority: TaskPriority;
+  context: string;
+}
+
+export interface MorningBriefData {
+  date: string;
+  kpis: {
+    total_clients: number;
+    on_track: number;
+    needs_attention: number;
+    at_risk: number;
+    no_data: number;
+  };
+  client_dashboard: Array<{
+    id: string;
+    name: string;
+    health_score: number | null;
+    status: 'ON TRACK' | 'NEEDS ATTENTION' | 'AT RISK' | 'NO DATA';
+    projects: string[];
+    completed_today: number;
+    pending: number;
+    blockers: number;
+  }>;
+  alerts: BriefAlert[];
+  recommended_actions: BriefAction[];
+  delegation: {
+    status: 'draft';
+    suggestions: DelegationSuggestion[];
+  };
+  meeting_insights: Array<{
+    client_name: string;
+    summary: string;
+    action_items: string[];
+    submitted_by: string;
+  }>;
 }
