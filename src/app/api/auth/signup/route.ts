@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const MAX_MEMBERS = 4;
+const MAX_MEMBERS = 10;
 
 export async function POST(request: NextRequest) {
   let body: { name?: string; email?: string; password?: string };

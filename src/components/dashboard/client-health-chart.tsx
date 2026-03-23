@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -11,9 +11,11 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/providers/toast-provider";
 
 interface ClientHealth {
   name: string;
@@ -57,23 +59,45 @@ function CustomTooltip({
 export function ClientHealthChart() {
   const [data, setData] = useState<ClientHealth[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
+  const { toast } = useToast();
+
+  const fetchHealthData = useCallback(async () => {
+    const supabase = createClient();
+
+    const { data: clients } = await supabase
+      .from("clients")
+      .select("name, health_score")
+      .order("health_score", { ascending: false })
+      .limit(10);
+
+    setData(clients ?? []);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    async function fetch() {
-      const supabase = createClient();
+    fetchHealthData();
+  }, [fetchHealthData]);
 
-      const { data: clients } = await supabase
-        .from("clients")
-        .select("name, health_score")
-        .order("health_score", { ascending: false })
-        .limit(10);
+  async function handleRecalculate() {
+    setRecalculating(true);
+    try {
+      const res = await fetch("/api/clients/health-score", { method: "POST" });
+      const body = await res.json();
 
-      setData(clients ?? []);
-      setLoading(false);
+      if (!res.ok) {
+        toast(body.error ?? "Failed to recalculate", "error");
+        return;
+      }
+
+      toast(`Health scores updated for ${body.updated} clients`, "success");
+      await fetchHealthData();
+    } catch {
+      toast("Network error recalculating scores", "error");
+    } finally {
+      setRecalculating(false);
     }
-
-    fetch();
-  }, []);
+  }
 
   if (loading) {
     return (
@@ -88,8 +112,20 @@ export function ClientHealthChart() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Client Health</CardTitle>
+        <button
+          type="button"
+          onClick={handleRecalculate}
+          disabled={recalculating}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-border)] hover:text-[var(--color-text)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw
+            size={13}
+            className={recalculating ? "animate-spin" : ""}
+          />
+          {recalculating ? "Recalculating..." : "Recalculate Health"}
+        </button>
       </CardHeader>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} layout="vertical" margin={{ left: 20 }}>

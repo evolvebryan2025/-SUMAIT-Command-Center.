@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useRouter } from "next/navigation";
 import type { Profile, Task, ContactTask } from "@/lib/types";
 
 interface EmployeeDetailProps {
@@ -27,12 +28,15 @@ interface ContactTaskWithClient extends ContactTask {
 
 export function EmployeeDetail({ employeeId }: EmployeeDetailProps) {
   const { toast } = useToast();
-  const { isAdmin } = useUser();
+  const { isAdmin, profile: currentUserProfile } = useUser();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tasks, setTasks] = useState<TaskWithClient[]>([]);
   const [contactTasks, setContactTasks] = useState<ContactTaskWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [deactivating, setDeactivating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [changingRole, setChangingRole] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -110,21 +114,80 @@ export function EmployeeDetail({ employeeId }: EmployeeDetailProps) {
 
     setDeactivating(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_active: false })
-        .eq("id", employeeId);
-      if (error) throw error;
+      const res = await fetch(`/api/team/${employeeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: false }),
+      });
+      const text = await res.text();
+      let data: Record<string, string> = {};
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) throw new Error(data.error ?? `Server returned ${res.status}`);
       toast("Employee deactivated", "success");
       fetchData();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to deactivate";
       toast(message, "error");
+      console.error("Deactivate error:", err);
     } finally {
       setDeactivating(false);
     }
   }
+
+  async function handleDelete() {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete ${profile?.name}? This will remove their account, unassign all their tasks, and cannot be undone.`
+      )
+    )
+      return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/team/${employeeId}`, { method: "DELETE" });
+      const text = await res.text();
+      let data: Record<string, string> = {};
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `Server returned ${res.status}`);
+      }
+
+      toast(data.message ?? "Employee deleted", "success");
+      router.push("/team");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete";
+      toast(message, "error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleRoleChange(newRole: string) {
+    if (!profile || newRole === profile.role) return;
+
+    setChangingRole(true);
+    try {
+      const res = await fetch(`/api/team/${employeeId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      const text = await res.text();
+      let data: Record<string, string> = {};
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) throw new Error(data.error ?? `Server returned ${res.status}`);
+      toast(`Role updated to ${newRole}`, "success");
+      fetchData();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to change role";
+      toast(message, "error");
+    } finally {
+      setChangingRole(false);
+    }
+  }
+
+  const isViewingSelf = currentUserProfile?.id === employeeId;
 
   if (loading) {
     return (
@@ -159,15 +222,41 @@ export function EmployeeDetail({ employeeId }: EmployeeDetailProps) {
               <p className="text-sm text-[var(--color-text-secondary)]">{profile.email}</p>
             </div>
           </div>
-          {isAdmin && profile.is_active && (
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={handleDeactivate}
-              disabled={deactivating}
-            >
-              {deactivating ? "Deactivating..." : "Deactivate"}
-            </Button>
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              {!isViewingSelf && (
+                <select
+                  title="Change user role"
+                  aria-label="Change user role"
+                  className="px-3 py-1.5 text-sm rounded-[var(--radius)] bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all appearance-none cursor-pointer"
+                  value={profile.role}
+                  onChange={(e) => handleRoleChange(e.target.value)}
+                  disabled={changingRole}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="lead">Lead</option>
+                  <option value="member">Member</option>
+                </select>
+              )}
+              {profile.is_active && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={handleDeactivate}
+                  disabled={deactivating || deleting}
+                >
+                  {deactivating ? "Deactivating..." : "Deactivate"}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={handleDelete}
+                disabled={deleting || deactivating}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
           )}
         </CardHeader>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">

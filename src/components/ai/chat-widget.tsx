@@ -1,19 +1,32 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageSquare, Send, X, Trash2 } from "lucide-react";
+import { MessageSquare, Send, X, Trash2, Paperclip, Loader2, XCircle } from "lucide-react";
 import { useChat } from "@/hooks/use-chat";
 import { useUser } from "@/hooks/use-user";
 import { ChatMessage } from "./chat-message";
 
 const MAX_INPUT_LENGTH = 2000;
 
+const UPLOAD_ACCEPT = ".png,.jpg,.jpeg,.webp,.pdf,.mp4,.mov,.txt,.md,.csv";
+
+interface Attachment {
+  readonly id: string;
+  readonly file_name: string;
+  readonly file_url: string;
+  readonly file_type: string;
+  readonly file_size: number;
+}
+
 export function ChatWidget() {
   const { isAdmin, loading } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { messages, isLoading, error, sendMessage, clearChat } = useChat();
 
   // Auto-scroll to bottom on new messages
@@ -28,12 +41,62 @@ export function ChatWidget() {
     }
   }, [isOpen]);
 
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Reset input so the same file can be re-selected
+      e.target.value = "";
+
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/ai/chat/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.error("Upload failed:", data.error);
+          return;
+        }
+
+        setAttachment(data.attachment);
+      } catch (err) {
+        console.error("Upload error:", err);
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    []
+  );
+
+  const handleRemoveAttachment = useCallback(() => {
+    setAttachment(null);
+  }, []);
+
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
-    sendMessage(trimmed);
+    if (!trimmed && !attachment) return;
+    if (isLoading) return;
+
+    let messageContent = trimmed;
+    if (attachment) {
+      const attachmentLink = `[Attached: ${attachment.file_name}](${attachment.file_url})`;
+      messageContent = messageContent
+        ? `${messageContent}\n\n${attachmentLink}`
+        : attachmentLink;
+    }
+
+    sendMessage(messageContent);
     setInput("");
-  }, [input, isLoading, sendMessage]);
+    setAttachment(null);
+  }, [input, attachment, isLoading, sendMessage]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -154,7 +217,68 @@ export function ChatWidget() {
 
           {/* Input area */}
           <div className="border-t border-[var(--color-border)] px-4 py-3">
+            {/* Attachment preview */}
+            {(attachment || isUploading) && (
+              <div className="mb-2 flex items-center gap-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[var(--color-border)] px-3 py-2">
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-[var(--color-primary)]" />
+                    <span className="text-xs text-[var(--color-text-secondary)] flex-1">Uploading...</span>
+                  </>
+                ) : attachment ? (
+                  <>
+                    {attachment.file_type.startsWith("image/") ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={attachment.file_url}
+                        alt={attachment.file_name}
+                        className="h-10 w-10 rounded object-cover"
+                      />
+                    ) : (
+                      <Paperclip className="h-4 w-4 text-[var(--color-text-secondary)]" />
+                    )}
+                    <span className="text-xs text-[var(--color-text)] flex-1 truncate">
+                      {attachment.file_name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAttachment}
+                      className="flex-shrink-0 text-[var(--color-text-secondary)] hover:text-red-400 transition-colors"
+                      aria-label="Remove attachment"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            )}
+
             <div className="flex items-end gap-2">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={UPLOAD_ACCEPT}
+                onChange={handleFileSelect}
+                className="hidden"
+                aria-label="Upload file attachment"
+              />
+
+              {/* Attach button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-[var(--color-text-secondary)] transition-all hover:text-[var(--color-text)] hover:bg-[rgba(255,255,255,0.05)] disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Attach file"
+                title="Attach file"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+              </button>
+
               <div className="relative flex-1">
                 <textarea
                   ref={inputRef}
@@ -175,7 +299,7 @@ export function ChatWidget() {
               </div>
               <button
                 onClick={handleSend}
-                disabled={!input.trim() || isLoading || isOverLimit}
+                disabled={(!input.trim() && !attachment) || isLoading || isOverLimit}
                 className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary)] text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >

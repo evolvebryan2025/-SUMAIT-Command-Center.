@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Menu, X, LayoutDashboard, Users, UserCog, FileText,
   Settings, CheckSquare, Mail, CalendarDays, ClipboardList,
-  Bell, User,
+  Bell, User, Library, TrendingUp,
 } from "lucide-react";
 import { DevKitSwitcher } from "./dev-kit-switcher";
 import { useUser } from "@/hooks/use-user";
@@ -19,8 +19,10 @@ const navItems = [
   { label: "Daily Report", href: "/daily-report", icon: ClipboardList },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
   { label: "Campaigns", href: "/campaigns", icon: Mail },
+  { label: "Resources", href: "/resources", icon: Library },
   { label: "Team", href: "/team", icon: UserCog },
   { label: "Reports", href: "/reports", icon: FileText },
+  { label: "Performance", href: "/performance", icon: TrendingUp, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },
 ];
 

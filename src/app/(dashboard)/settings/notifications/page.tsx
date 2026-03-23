@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/providers/toast-provider";
+import { NotificationRules } from "@/components/settings/notification-rules";
 
 interface ChannelConfig {
   id: string;
@@ -181,6 +182,9 @@ export default function NotificationSettingsPage() {
           </div>
         </Card>
       </div>
+
+      {/* Notification Rules */}
+      <NotificationRules />
 
       {/* Setup guide */}
       <div className="space-y-4">

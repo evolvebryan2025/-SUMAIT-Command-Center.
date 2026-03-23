@@ -16,6 +16,7 @@ import { TaskBoard } from "@/components/tasks/task-board";
 import { TaskFiltersBar, type TaskFilters } from "@/components/tasks/task-filters";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import { LayoutGrid, Table, Trash2 } from "lucide-react";
+import { TaskSuggestions } from "@/components/ai/task-suggestions";
 
 type ViewMode = "table" | "kanban";
 
@@ -256,6 +257,9 @@ export default function TasksPage() {
           <Button onClick={handleNewTask}>New Task</Button>
         </div>
       </div>
+
+      {/* AI Task Suggestions (admin-only) */}
+      {isAdmin && <TaskSuggestions onTaskCreated={fetchData} />}
 
       {/* Filters */}
       <TaskFiltersBar filters={filters} onChange={setFilters} />
