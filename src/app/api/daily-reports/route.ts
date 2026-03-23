@@ -68,6 +68,7 @@ interface ReportItem {
   description: string;
   links?: string[] | null;
   task_id?: string | null;
+  client_id?: string | null;
 }
 
 interface ReportBody {
@@ -163,6 +164,7 @@ export async function POST(request: NextRequest) {
       description: item.description,
       links: item.links ?? null,
       task_id: item.task_id ?? null,
+      client_id: item.client_id || null,
       sort_order: index,
     }));
 

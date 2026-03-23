@@ -83,6 +83,16 @@ export function ReportForm() {
   // Past reports
   const [pastReports, setPastReports] = useState<DailyReport[]>([]);
 
+  // Clients for meeting notes
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    fetch("/api/clients")
+      .then((r) => r.json())
+      .then((data) => setClients(data.clients || []))
+      .catch(() => {});
+  }, []);
+
   // Fetch assigned tasks
   useEffect(() => {
     async function fetchTasks() {
@@ -131,6 +141,7 @@ export function ReportForm() {
                 links: item.links ?? [],
                 item_type: item.item_type,
                 task_id: item.task_id,
+                client_id: item.client_id ?? undefined,
               });
               if (item.task_id) {
                 setCheckedTaskIds((prev) => new Set([...prev, item.task_id!]));
@@ -250,6 +261,7 @@ export function ReportForm() {
       ...items.completed.map((item, i) => ({ ...item, sort_order: i })),
       ...items.pending.map((item, i) => ({ ...item, sort_order: i })),
       ...items.blocker.map((item, i) => ({ ...item, sort_order: i })),
+      ...items.meeting_note.map((item, i) => ({ ...item, sort_order: i })),
     ];
 
     // Validate at least one item has a description
@@ -268,6 +280,7 @@ export function ReportForm() {
           description: item.description.trim(),
           links: item.links.filter((l) => l.trim().length > 0),
           task_id: item.task_id ?? null,
+          client_id: item.client_id || null,
           sort_order: item.sort_order,
         })),
         ...(existingReportId ? { id: existingReportId } : {}),
@@ -303,7 +316,7 @@ export function ReportForm() {
   }, [items, todayStr, existingReportId, toast]);
 
   const totalItems =
-    items.completed.length + items.pending.length + items.blocker.length;
+    items.completed.length + items.pending.length + items.blocker.length + items.meeting_note.length;
 
   if (loadingReport) {
     return (
@@ -367,7 +380,7 @@ export function ReportForm() {
       )}
 
       {/* Report sections */}
-      {(["completed", "pending", "blocker"] as const).map((section) => {
+      {(["completed", "pending", "blocker", "meeting_note"] as const).map((section) => {
         const meta = SECTION_META[section];
         const sectionItems = items[section];
         const isCollapsed = collapsed[section];
@@ -398,12 +411,33 @@ export function ReportForm() {
             {!isCollapsed && (
               <div className="mt-4 space-y-3">
                 {sectionItems.map((item, index) => (
-                  <ReportItemRow
-                    key={`${section}-${index}`}
-                    item={item}
-                    onChange={(updated) => handleUpdateItem(section, index, updated)}
-                    onRemove={() => handleRemoveItem(section, index)}
-                  />
+                  <div key={`${section}-${index}`}>
+                    {section === "meeting_note" && (
+                      <select
+                        aria-label="Select client for meeting note"
+                        value={item.client_id || ""}
+                        onChange={(e) =>
+                          handleUpdateItem(section, index, {
+                            ...item,
+                            client_id: e.target.value || undefined,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-lg bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text)] text-sm mb-2"
+                      >
+                        <option value="">Select client...</option>
+                        {clients.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <ReportItemRow
+                      item={item}
+                      onChange={(updated) => handleUpdateItem(section, index, updated)}
+                      onRemove={() => handleRemoveItem(section, index)}
+                    />
+                  </div>
                 ))}
                 <Button
                   type="button"

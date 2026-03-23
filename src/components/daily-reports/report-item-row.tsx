@@ -10,6 +10,7 @@ export interface ReportItemData {
   links: string[];
   item_type: "completed" | "pending" | "blocker" | "meeting_note";
   task_id?: string | null;
+  client_id?: string;
 }
 
 interface ReportItemRowProps {
