@@ -10,6 +10,26 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Check if user is a client — route to portal
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.role === "client") {
+          // Update last_accessed
+          await supabase
+            .from("client_portal_access")
+            .update({ last_accessed: new Date().toISOString() })
+            .eq("user_id", user.id);
+
+          return NextResponse.redirect(`${origin}/portal`);
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
