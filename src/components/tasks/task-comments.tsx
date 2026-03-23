@@ -10,6 +10,7 @@ import { useToast } from "@/providers/toast-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { ClientCommentsTab } from "./client-comments-tab";
 import type { TaskComment, CommentType } from "@/lib/types";
 
 /** Extended type when the API enriches comments with read status */
@@ -27,6 +28,8 @@ const COMMENT_TYPE_VARIANTS: Record<string, "neutral" | "warning" | "danger"> = 
   blocker: "danger",
 };
 
+type TabId = "internal" | "client";
+
 export function TaskComments({ taskId }: TaskCommentsProps) {
   const { toast } = useToast();
   const { profile, isAdmin } = useUser();
@@ -36,6 +39,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   const [commentType, setCommentType] = useState<CommentType>("comment");
   const [submitting, setSubmitting] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>("internal");
+  const [clientCommentCount, setClientCommentCount] = useState(0);
   const readMarkedRef = useRef(false);
 
   const fetchComments = useCallback(async () => {
@@ -92,6 +97,19 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
       supabase.removeChannel(channel);
     };
   }, [taskId, fetchComments]);
+
+  // Fetch client comment count for badge
+  useEffect(() => {
+    fetch(`/api/portal/tasks/${taskId}/comments`)
+      .then((r) => r.json())
+      .then((d) => {
+        const clientMessages = (d.comments ?? []).filter(
+          (c: { author_type: string }) => c.author_type === "client"
+        );
+        setClientCommentCount(clientMessages.length);
+      })
+      .catch(() => {});
+  }, [taskId]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -168,6 +186,38 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
   return (
     <div className="space-y-4 pt-4 border-t border-[var(--color-border)]">
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-[var(--color-border)]">
+        <button
+          type="button"
+          onClick={() => setActiveTab("internal")}
+          className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+            activeTab === "internal"
+              ? "text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]"
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Internal ({comments.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("client")}
+          className={`px-3 py-2 text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+            activeTab === "client"
+              ? "text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]"
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Client
+          {clientCommentCount > 0 && (
+            <Badge variant="danger">{clientCommentCount}</Badge>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "client" && <ClientCommentsTab taskId={taskId} />}
+
+      {activeTab === "internal" && <>
       <h4 className="text-sm font-semibold text-[var(--color-text)]">
         Comments ({comments.length})
       </h4>
@@ -276,6 +326,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           </Button>
         </div>
       </form>
+      </>}
     </div>
   );
 }
