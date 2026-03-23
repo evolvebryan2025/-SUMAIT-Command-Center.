@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, X, LayoutDashboard, Users, UserCog, FileText,
+  Menu, X, LayoutDashboard, Sunrise, Users, UserCog, FileText,
   Settings, CheckSquare, Mail, CalendarDays, ClipboardList,
   Bell, User, Library, TrendingUp,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Morning Brief", href: "/morning-brief", icon: Sunrise, adminOnly: true },
   { label: "Clients", href: "/clients", icon: Users },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Daily Report", href: "/daily-report", icon: ClipboardList },
